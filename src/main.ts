@@ -1,6 +1,18 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
+import { provideRouter } from '@angular/router';
+import { routes } from './app/app.routes';
+import { SQLiteService } from './app/core/services/sqlite.service';
 
-bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes),
+    {
+      provide: 'APP_INIT_DB',
+      multi: true,
+      useFactory: (db: SQLiteService) => () => db.init(),
+      deps: [SQLiteService],
+    },
+  ],
+});
+
