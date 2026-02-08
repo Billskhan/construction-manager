@@ -15,6 +15,16 @@ async getAll(): Promise<Project[]> {
   return res.values ?? [];
 }
 
+  async getById(projectId: number): Promise<Project | null> {
+    const res = await this.sqlite.query(
+      `SELECT * FROM projects WHERE id = ? LIMIT 1`,
+      [projectId]
+    );
+
+    const project = res.values?.[0] as Project | undefined;
+    return project ?? null;
+  }
+
 
   // async getAll(): Promise<Project[]> {
   //   const res = await this.sqlite.query(

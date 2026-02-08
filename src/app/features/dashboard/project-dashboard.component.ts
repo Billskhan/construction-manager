@@ -1,17 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProjectDashboardStore } from './project-dashboard.store';
 import { TransactionStore } from '../transactions/transaction.store';
 import { StageStore } from '../stages/stage.store';
 import { AuthService } from '../../core/services/auth.service';
+import { ProjectService } from '../projects/project.service';
 
 @Component({
   standalone: true,
   selector: 'app-project-dashboard',
   imports: [CommonModule],
   template: `
-    <h2>Project Dashboard</h2>
+    <h2>{{ projectName() ? projectName() + ' Dashboard' : 'Project Dashboard' }}</h2>
 
     <!-- KPI CARDS -->
     <div class="kpis">
@@ -61,34 +62,35 @@ import { AuthService } from '../../core/services/auth.service';
   `,
 })
 export class ProjectDashboardComponent implements OnInit {
-
   projectId!: number;
- isManager = false;
+  isManager = false;
+  projectName = signal('');
+
   constructor(
     public dashboard: ProjectDashboardStore,
     private txStore: TransactionStore,
     private stageStore: StageStore,
     private route: ActivatedRoute,
     private router: Router,
-    public auth: AuthService   // 👈 must be public for template
+    public auth: AuthService,
+    private projectService: ProjectService
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('id'));
- this.isManager = this.auth.isManager();
+    this.isManager = this.auth.isManager();
     this.stageStore.load(this.projectId);
     this.txStore.load(this.projectId);
+
+    const project = await this.projectService.getById(this.projectId);
+    this.projectName.set(project?.name ?? '');
   }
 
   addTx() {
-    this.router.navigateByUrl(
-      `/projects/${this.projectId}/transactions/add`
-    );
+    this.router.navigateByUrl(`/projects/${this.projectId}/transactions/add`);
   }
 
   viewReports() {
-    this.router.navigateByUrl(
-      `/projects/${this.projectId}/reports`
-    );
+    this.router.navigateByUrl(`/projects/${this.projectId}/reports`);
   }
 }
