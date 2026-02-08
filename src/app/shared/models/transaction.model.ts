@@ -4,11 +4,14 @@ export interface Transaction {
   stageId: number;
   vendorId: number;
   date: string;
-  entryType: 'Material' | 'Service';
+  entryType: string;
   paymentMode: string;
   totalAmount: number;
   creditAmount: number;
   comments?: string;
   createdBy?: number;
-  createdAt?: string;
+
+  // STEP 20 — Acknowledgement status
+  ackStatus?: 'PENDING' | 'CONFIRMED' | 'REJECTED';
 }
+

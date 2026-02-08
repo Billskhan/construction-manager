@@ -7,7 +7,7 @@ export class ReportService {
   constructor(private sqlite: SQLiteService) {}
 
   async financialSummary(projectId: number) {
-    const res = await this.sqlite.database.query(
+    const res = await this.sqlite.query(
       `SELECT
         SUM(totalAmount) as totalSpent,
         SUM(creditAmount) as totalCredit,
@@ -20,7 +20,7 @@ export class ReportService {
   }
 
   async materialSummary(projectId: number) {
-    const res = await this.sqlite.database.query(
+    const res = await this.sqlite.query(
       `SELECT
         itemName,
         unit,
@@ -37,7 +37,7 @@ export class ReportService {
   }
 
   async stageSummary(projectId: number) {
-    const res = await this.sqlite.database.query(
+    const res = await this.sqlite.query(
       `SELECT
         s.name as stage,
         s.budget,

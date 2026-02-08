@@ -8,6 +8,7 @@ export class NotificationService {
   constructor(private sqlite: SQLiteService) {}
 
   async create(notification: AppNotification) {
+    await this.sqlite.init();  
     await this.sqlite.database.run(
       `INSERT INTO notifications
        (userId, transactionId, title, message, isRead, createdAt)
@@ -24,7 +25,8 @@ export class NotificationService {
   }
 
   async getForUser(userId: number) {
-    const res = await this.sqlite.database.query(
+    await this.sqlite.init();  
+    const res = await this.sqlite.query(
       `SELECT * FROM notifications
        WHERE userId = ?
        ORDER BY createdAt DESC`,

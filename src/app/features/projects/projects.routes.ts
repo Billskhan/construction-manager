@@ -14,7 +14,7 @@ export const PROJECT_ROUTES: Routes = [
   {
   path: ':id/vendors',
   loadChildren: () =>
-    import('../vendors/vendors.routes')
+    import('../vendor/vendor.routes')
       .then(m => m.VENDOR_ROUTES),
   },
   {

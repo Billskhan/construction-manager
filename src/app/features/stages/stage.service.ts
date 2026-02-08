@@ -8,7 +8,8 @@ export class StageService {
   constructor(private sqlite: SQLiteService) {}
 
   async getByProject(projectId: number): Promise<Stage[]> {
-    const res = await this.sqlite.database.query(
+   // await this.sqlite.init();  
+    const res = await this.sqlite.query(
       `SELECT * FROM stages 
        WHERE projectId = ? 
        ORDER BY sequence`,

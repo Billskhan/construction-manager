@@ -8,15 +8,26 @@ export class TransactionService {
 
   constructor(private sqlite: SQLiteService) {}
 
-  async getByProject(projectId: number): Promise<Transaction[]> {
-    const res = await this.sqlite.database.query(
-      `SELECT * FROM transactions WHERE projectId = ? ORDER BY date DESC`,
-      [projectId]
-    );
-    return res.values || [];
-  }
+async getByProject(projectId: number): Promise<Transaction[]> {
+  const res = await this.sqlite.query(
+    `
+    SELECT
+      t.*,
+      COALESCE(a.status, 'PENDING') AS ackStatus
+    FROM transactions t
+    LEFT JOIN acknowledgements a
+      ON a.transactionId = t.id
+    WHERE t.projectId = ?
+    ORDER BY t.date DESC
+    `,
+    [projectId]
+  );
+
+  return res.values || [];
+}
 
   async create(tx: Transaction, items: TransactionItem[]): Promise<number> {
+    //await this.sqlite.init();  
     const result = await this.sqlite.database.run(
       `INSERT INTO transactions 
        (projectId, stageId, vendorId, date, entryType, paymentMode, totalAmount, creditAmount, comments, createdBy, createdAt)

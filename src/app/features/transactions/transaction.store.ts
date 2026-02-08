@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { Transaction } from '../../shared/models/transaction.model';
 import { TransactionItem } from '../../shared/models/transaction-item.model';
 import { TransactionService } from './transaction.service';
-import { VendorService } from '../vendors/vendor.service';
+import { VendorService } from '../vendor/vendor.service';
 import { NotificationService } from '../notifications/notification.service';
 
 @Injectable({ providedIn: 'root' })
@@ -21,7 +21,12 @@ export class TransactionStore {
   async load(projectId: number) {
     this.loading.set(true);
     const data = await this.service.getByProject(projectId);
-    this.transactions.set(data);
+      this.transactions.set(
+    data.map(t => ({
+      ...t,
+      ackStatus: t.ackStatus ?? 'PENDING',
+    }))
+  );
     this.loading.set(false);
   }
 

@@ -28,58 +28,67 @@ import { AuthService } from '../../core/services/auth.service';
         <th>Actual</th>
         <th>Variance</th>
       </tr>
-      <tr *ngFor="let s of dashboard.stageCostSummary()">
-        <td>{{ s.stage }}</td>
-        <td>{{ s.budget }}</td>
-        <td>{{ s.actual }}</td>
-        <td [style.color]="s.variance < 0 ? 'red' : 'green'">
-          {{ s.variance }}
-        </td>
-      </tr>
+
+      @for (s of dashboard.stageCostSummary(); track s.stage) {
+        <tr>
+          <td>{{ s.stage }}</td>
+          <td>{{ s.budget }}</td>
+          <td>{{ s.actual }}</td>
+          <td [style.color]="s.variance < 0 ? 'red' : 'green'">
+            {{ s.variance }}
+          </td>
+        </tr>
+      }
     </table>
 
     <!-- RECENT TRANSACTIONS -->
     <h3>Recent Transactions</h3>
     <ul>
-      <li *ngFor="let t of dashboard.recentTransactions()">
-        {{ t.date }} — {{ t.totalAmount }}
-      </li>
+      @for (t of dashboard.recentTransactions(); track t.id) {
+        <li>
+          {{ t.date }} — {{ t.totalAmount }}
+        </li>
+      }
     </ul>
 
-    <!-- QUICK ACTIONS -->
-    <div *ngIf="isManager">
-      <button (click)="addTx()">+ Add Transaction</button>
-      <button (click)="viewReports()">📊 Reports</button>
-    </div>
+    <!-- QUICK ACTIONS (PART E) -->
+    @if (auth.isManager()) {
+      <div>
+        <button (click)="addTx()">+ Add Transaction</button>
+        <button (click)="viewReports()">📊 Reports</button>
+      </div>
+    }
   `,
 })
 export class ProjectDashboardComponent implements OnInit {
 
   projectId!: number;
-  isManager = false;
-
+ isManager = false;
   constructor(
     public dashboard: ProjectDashboardStore,
     private txStore: TransactionStore,
     private stageStore: StageStore,
     private route: ActivatedRoute,
     private router: Router,
-    private auth: AuthService
+    public auth: AuthService   // 👈 must be public for template
   ) {}
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('id'));
-    this.isManager = this.auth.isManager();
-
+ this.isManager = this.auth.isManager();
     this.stageStore.load(this.projectId);
     this.txStore.load(this.projectId);
   }
 
   addTx() {
-    this.router.navigateByUrl(`/projects/${this.projectId}/transactions/add`);
+    this.router.navigateByUrl(
+      `/projects/${this.projectId}/transactions/add`
+    );
   }
 
   viewReports() {
-    this.router.navigateByUrl(`/projects/${this.projectId}/reports`);
+    this.router.navigateByUrl(
+      `/projects/${this.projectId}/reports`
+    );
   }
 }

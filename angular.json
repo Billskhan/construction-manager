@@ -26,9 +26,25 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
+              "src/assets",
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "/assets/"
+              },
+              {
+                "glob": "**/*.js",
+                "input": "./node_modules/angular-web-sqlite/src/lib/assets",
+                "output": "./sqlite-client/"
+              },
+              {
+                "glob": "**/*",
+                "input": "./node_modules/@sqlite.org/sqlite-wasm/sqlite-wasm/jswasm/",
+                "output": "./sqlite-client/"
               }
             ],
             "styles": [
@@ -70,7 +86,13 @@
               "buildTarget": "construction-manager:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "headers": {
+              "Cross-Origin-Opener-Policy": "same-origin",
+              "Cross-Origin-Embedder-Policy": "require-corp"
+            }
+          }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n"

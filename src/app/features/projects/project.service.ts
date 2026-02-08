@@ -7,12 +7,21 @@ export class ProjectService {
 
   constructor(private sqlite: SQLiteService) {}
 
-  async getAll(): Promise<Project[]> {
-    const res = await this.sqlite.database.query(
-      `SELECT * FROM projects ORDER BY createdAt DESC`
-    );
-    return res.values as Project[] || [];
-  }
+async getAll(): Promise<Project[]> {
+  const res = await this.sqlite.query(
+    `SELECT * FROM projects ORDER BY createdAt DESC`
+  );
+
+  return res.values ?? [];
+}
+
+
+  // async getAll(): Promise<Project[]> {
+  //   const res = await this.sqlite.query(
+  //     `SELECT * FROM projects ORDER BY createdAt DESC`
+  //   );
+  //   return res.values as Project[] || [];
+  // }
 
   async create(project: Project) {
     const query = `
@@ -27,7 +36,10 @@ export class ProjectService {
       project.createdBy ?? null,
       new Date().toISOString(),
     ];
-
-    await this.sqlite.database.run(query, values);
+    //await this.sqlite.beginTransaction();
+    await this.sqlite.run(query, values);
+    //await this.sqlite.commitTransaction();
+    const test = await this.sqlite.query('SELECT * FROM projects');
+console.log('AFTER INSERT', test);
   }
 }
