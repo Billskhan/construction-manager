@@ -33,6 +33,7 @@ export class StageFormComponent {
     private router: Router
   ) {
     this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+    
   }
 
   async save() {

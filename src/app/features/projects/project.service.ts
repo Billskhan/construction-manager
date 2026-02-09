@@ -33,23 +33,42 @@ async getAll(): Promise<Project[]> {
   //   return res.values as Project[] || [];
   // }
 
-  async create(project: Project) {
-    const query = `
-      INSERT INTO projects (name, location, status, startDate, createdBy, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-      project.name,
-      project.location ?? '',
-      project.status,
-      project.startDate ?? null,
-      project.createdBy ?? null,
-      new Date().toISOString(),
-    ];
-    //await this.sqlite.beginTransaction();
-    await this.sqlite.run(query, values);
-    //await this.sqlite.commitTransaction();
-    const test = await this.sqlite.query('SELECT * FROM projects');
-console.log('AFTER INSERT', test);
+async create(project: Project) {
+  const query = `
+    INSERT INTO projects (name, location, status, startDate, createdBy, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    project.name,
+    project.location ?? '',
+    project.status,
+    project.startDate ?? null,
+    project.createdBy ?? null,
+    new Date().toISOString(),
+  ];
+
+// 1️⃣ Insert project AND get id correctly
+const result = await this.sqlite.run(query, values);
+const projectId = result.changes.lastId;
+
+  // 3️⃣ Create stages from templates
+  const templates = await this.sqlite.query(
+    `SELECT * FROM stage_templates ORDER BY defaultSequence`
+  );
+
+  for (const t of templates.values ?? []) {
+    await this.sqlite.run(`
+      INSERT INTO stages (projectId, name, sequence, budget, isActive)
+      VALUES (?, ?, ?, ?, 1)
+    `, [
+      projectId,
+      t.name,
+      t.defaultSequence,
+      0
+    ]);
   }
+
+  console.log('✅ Project + stages created');
+}
 }

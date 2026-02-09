@@ -15,11 +15,23 @@ export class StageService {
        ORDER BY sequence`,
       [projectId]
     );
-    return res.values || [];
+
+
+
+    console.log('STAGES RAW:', await this.sqlite.query(
+  `SELECT * FROM stages WHERE projectId = ?`,
+  [projectId]
+));
+
+    return res.values ?? [];
+
+
+
+
   }
 
   async create(stage: Stage) {
-    await this.sqlite.database.run(
+    await this.sqlite.run(
       `INSERT INTO stages (projectId, name, sequence, budget, isActive)
        VALUES (?, ?, ?, ?, ?)`,
       [

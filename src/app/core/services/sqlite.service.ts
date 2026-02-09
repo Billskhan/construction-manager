@@ -36,7 +36,7 @@ if (saved) {
         stmt.free();
 
           this.persist(); 
-          
+
         const idStmt = this.db.prepare(
           'SELECT last_insert_rowid() as id'
         );
@@ -113,6 +113,7 @@ async run(sql: string, params: any[] = []) {
         createdBy INTEGER,
         createdAt TEXT
       );`,
+      
       `CREATE TABLE IF NOT EXISTS stages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         projectId INTEGER,
@@ -121,6 +122,13 @@ async run(sql: string, params: any[] = []) {
         budget REAL,
         isActive INTEGER
       );`,
+        
+      `CREATE TABLE IF NOT EXISTS stage_templates (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        defaultSequence INTEGER
+      );`,
+
       `CREATE TABLE IF NOT EXISTS vendors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         projectId INTEGER,
@@ -179,5 +187,32 @@ async run(sql: string, params: any[] = []) {
     for (const q of queries) {
       this.db.exec(q);
     }
+    // ✅ Seed stage templates only once (App Configuration)
+const checkStmt = this.db.prepare(
+  `SELECT COUNT(*) as count FROM stage_templates`
+);
+
+checkStmt.step();
+const count = checkStmt.getAsObject().count as number;
+checkStmt.free();
+
+if (count === 0) {
+  console.log('🌱 Seeding stage templates...');
+
+  this.db.exec(`
+    INSERT INTO stage_templates (name, defaultSequence) VALUES
+    ('Excavation', 1),
+    ('PCC', 2),
+    ('RCC', 3),
+    ('Brick Work', 4),
+    ('Plaster', 5),
+    ('Electrical', 6),
+    ('Plumbing', 7),
+    ('Paint', 8);
+  `);
+
+  this.persist(); // important: save to localStorage
+}
+
   }
 }

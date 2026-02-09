@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { TransactionItem } from '../../shared/models/transaction-item.model';
 import { PROJECT_STAGES } from '../../shared/constants/project-stages';
 import { VendorService } from '../vendor/vendor.service';
+import { StageStore } from '../stages/stage.store';
 
 @Component({
   standalone: true,
@@ -44,7 +45,7 @@ import { VendorService } from '../vendor/vendor.service';
         <select [(ngModel)]="stageId" name="stage" required>
           <option [ngValue]="null">Select Stage</option>
 
-          @for (s of stages; track s.id) {
+          @for (s of stageStore.stages(); track s.id) {
             <option [ngValue]="s.id">{{ s.name }}</option>
           }
         </select>
@@ -101,13 +102,17 @@ export class TransactionFormComponent {
   totalAmount = 0;
   items: TransactionItem[] = [];
 
-  stages = PROJECT_STAGES;
+  //stages = PROJECT_STAGES;
   stageId: number | null = null;
   vendorId: number | null = null;
 vendors: any[] = [];
 
+
+
+
   constructor(
     private store: TransactionStore,
+    public stageStore: StageStore,
     private vendorService: VendorService,
     private auth: AuthService,
     private route: ActivatedRoute,
@@ -130,6 +135,8 @@ vendors: any[] = [];
 async ngOnInit() {
   this.vendors = await this.vendorService.getAll();
    const projectId = Number(this.route.snapshot.paramMap.get('id'));
+   await this.stageStore.load(projectId);
+   console.log('TX FORM projectId:', this.projectId);
   //this.vendors = await this.vendorService.getByProject(projectId);
 }
   recalculateItem(item: TransactionItem) {

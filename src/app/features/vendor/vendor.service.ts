@@ -16,7 +16,7 @@ export class VendorService {
     );
 
     if ((countRes.values?.[0]?.cnt ?? 0) === 0) {
-      await this.sqlite.database.run(
+      await this.sqlite.run(
         `INSERT INTO vendors
          (projectId, name, phone, vendorType, hasApp, createdAt)
          VALUES (?, ?, ?, ?, ?, ?)`,
@@ -39,16 +39,18 @@ export class VendorService {
     return (res.values ?? []) as Vendor[];
   }
 
-  async getByProject(projectId: number): Promise<Vendor[]> {
-    await this.sqlite.init();
+async getByProject(projectId: number): Promise<Vendor[]> {
+  await this.sqlite.init();
 
-    const res = await this.sqlite.database.query(
-      `SELECT * FROM vendors WHERE projectId = ? ORDER BY name`,
-      [projectId]
-    );
+  const res = await this.sqlite.database.query(
+    `SELECT * FROM vendors 
+     WHERE projectId = ?
+     ORDER BY name`,
+    [projectId]
+  );
 
-    return (res.values ?? []) as Vendor[];
-  }
+  return (res.values ?? []) as Vendor[];
+}
 
   async getById(id: number) {
     await this.sqlite.init();
@@ -64,7 +66,7 @@ export class VendorService {
   async create(vendor: Vendor) {
     await this.sqlite.init();
 
-    await this.sqlite.database.run(
+    await this.sqlite.run(
       `INSERT INTO vendors
        (projectId, name, phone, vendorType, hasApp, createdAt)
        VALUES (?, ?, ?, ?, ?, ?)`,
