@@ -6,6 +6,7 @@ import { ProjectService } from './project.service';
 export class ProjectStore {
 
   projects = signal<Project[]>([]);
+   projectId = signal<number | null>(null);
   loading = signal(false);
 
   constructor(private service: ProjectService) {}
@@ -17,9 +18,14 @@ export class ProjectStore {
     this.loading.set(false);
   }
 
-  async addProject(project: Project) {
-    await this.service.create(project);
-    await this.loadProjects();
+async addProject(project: Project) {
+  const id = await this.service.create(project);
+
+  this.projectId.set(id);      // ← THE MISSING LINE
+  await this.loadProjects();
+}
+  setActiveProject(id: number) {
+    this.projectId.set(id);
   }
 }
 

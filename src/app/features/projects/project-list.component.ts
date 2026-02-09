@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProjectStore } from './project.store';
 import { Router } from '@angular/router';
+import { Project } from '../../shared/models/project.model';
 
 @Component({
   standalone: true,
@@ -12,11 +13,11 @@ import { Router } from '@angular/router';
 
     <button (click)="add()">+ New Project</button>
 
-    <div *ngIf="store.loading()">Loading...</div>
+    <div *ngIf="projectstore.loading()">Loading...</div>
 
     <ul>
-      <li *ngFor="let p of store.projects()"
-          (click)="open(p.id)">
+      <li *ngFor="let p of projectstore.projects()"
+          (click)="openProject(p)">
         <strong>{{ p.name }}</strong>
         <small>({{ p.status }})</small>
       </li>
@@ -26,18 +27,21 @@ import { Router } from '@angular/router';
 export class ProjectListComponent implements OnInit {
 
   constructor(
-    public store: ProjectStore,
+    public projectstore: ProjectStore,
     private router: Router
   ) {}
 
   ngOnInit() {
-    this.store.loadProjects();
+    this.projectstore.loadProjects();
   }
 
   add() {
     this.router.navigateByUrl('/projects/add');
   }
-
+openProject(project: Project) {
+  this.projectstore.setActiveProject(project.id!);   // ← POINT #3
+  this.router.navigate(['/dashboard']);            // or tx-form or stages
+}
   open(id?: number) {
     this.router.navigateByUrl(`/projects/${id}`);
   }

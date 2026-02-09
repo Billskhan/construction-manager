@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SQLiteService } from '../../core/services/sqlite.service';
 import { Project } from '../../shared/models/project.model';
+import { ProjectStore } from './project.store';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
@@ -69,6 +70,7 @@ const projectId = result.changes.lastId;
     ]);
   }
 
-  console.log('✅ Project + stages created');
+  console.log('✅ Project + stages created + ProjectID ' + projectId);
+  return projectId; // ← important
 }
 }
