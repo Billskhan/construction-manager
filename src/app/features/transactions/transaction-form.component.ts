@@ -4,7 +4,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TransactionStore } from './transaction.store';
 import { AuthService } from '../../core/services/auth.service';
 import { TransactionItem } from '../../shared/models/transaction-item.model';
-import { PROJECT_STAGES } from '../../shared/constants/project-stages';
 import { VendorService } from '../vendor/vendor.service';
 import { StageStore } from '../stages/stage.store';
 
@@ -118,7 +117,9 @@ vendors: any[] = [];
     private route: ActivatedRoute,
     private router: Router
   ) {
-    this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+    const routeProjectId = this.route.snapshot.paramMap.get('id')
+      ?? this.route.parent?.snapshot.paramMap.get('id');
+    this.projectId = Number(routeProjectId);
   }
 
   addItem() {
@@ -134,8 +135,7 @@ vendors: any[] = [];
   }
 async ngOnInit() {
   this.vendors = await this.vendorService.getAll();
-   const projectId = Number(this.route.snapshot.paramMap.get('id'));
-   await this.stageStore.load(projectId);
+   await this.stageStore.load(this.projectId);
    console.log('TX FORM projectId:', this.projectId);
   //this.vendors = await this.vendorService.getByProject(projectId);
 }
