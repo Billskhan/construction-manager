@@ -6,6 +6,7 @@ import { VendorStore } from './vendor.store';
 import { VendorService } from './vendor.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VendorType } from '../../shared/models/vendor.model';
+import { ProjectService } from '../projects/project.service';
 
 @Component({
   standalone: true,
@@ -36,12 +37,21 @@ import { VendorType } from '../../shared/models/vendor.model';
       </label>
 
       <!-- Manager only -->
-      <label *ngIf="isManager">
-        Public Profile
-        <input type="checkbox"
-               [(ngModel)]="isPublic"
-               name="isPublic" />
-      </label>
+<div *ngIf="isManager">
+  <label>Select Projects</label>
+<label>
+    <input type="checkbox"
+           [(ngModel)]="isPublic"
+           name="isPublic" />
+    Public Vendor Profile
+  </label>
+  <div *ngFor="let p of projects">
+    <input type="checkbox"
+           [checked]="selectedProjects.includes(p.id)"
+           (change)="toggleProject(p.id, $event)" />
+    {{ p.name }}
+  </div>
+</div>
 
       <button type="submit">Save</button>
 
@@ -49,6 +59,9 @@ import { VendorType } from '../../shared/models/vendor.model';
   `,
 })
 export class VendorFormComponent {
+
+  projects: any[] = [];
+selectedProjects: number[] = [];
 
   vendorId?: number;
 
@@ -60,71 +73,137 @@ export class VendorFormComponent {
   isManager = false;
 
   constructor(
+    private projectService: ProjectService,
     private vendorService: VendorService,
     private auth: AuthService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
 
-  async ngOnInit() {
+async ngOnInit() {
 
-    const user = this.auth.user();
-    this.isManager = user?.role === 'MANAGER';
+  const user = this.auth.user();
+  if (!user) return;
 
-    // 🔒 If Vendor role → force own vendorId
-    if (user?.role === 'VENDOR') {
-      this.vendorId = user.vendorId;
-    } else {
-      const id = this.route.snapshot.paramMap.get('vendorId');
-      this.vendorId = id ? Number(id) : undefined;
-    }
+  this.isManager = user.role === 'MANAGER';
 
-    if (this.vendorId) {
-      const vendor = await this.vendorService.getById(this.vendorId);
-      if (vendor) {
-        this.name = vendor.name;
-        this.phone = vendor.phone;
-        this.vendorType = vendor.vendorType;
-        this.isPublic = vendor.isPublic === 1;;
-      }
+  if (user.role === 'VENDOR') {
+    this.vendorId = user.vendorId;
+  } else {
+    const id = this.route.snapshot.paramMap.get('vendorId');
+    this.vendorId = id ? Number(id) : undefined;
+  }
+
+  if (this.vendorId) {
+    const vendor =
+      await this.vendorService.getById(this.vendorId);
+
+    if (vendor) {
+      this.name = vendor.name;
+      this.phone = vendor.phone;
+      this.vendorType = vendor.vendorType;
+      this.isPublic = vendor.isPublic === 1;
     }
   }
 
-  async save() {
-
-    const user = this.auth.user();
-
-    // 🔒 Security enforcement
-    if (
-      user?.role === 'VENDOR' &&
-      user.vendorId !== this.vendorId
-    ) {
-      alert('Unauthorized access');
-      return;
-    }
-    
-    const isPublicValue = this.isManager
-    ? (this.isPublic ? 1 : 0)
-    : 0;
+  if (this.isManager) {
+    this.projects =
+      await this.projectService.getByManager(user.id!);
 
     if (this.vendorId) {
-      await this.vendorService.update({
-        id: this.vendorId,
-        name: this.name,
-        phone: this.phone,
-        vendorType: this.vendorType,
-        isPublic: isPublicValue
-      });
-    } else {
-      await this.vendorService.create({
-        name: this.name,
-        phone: this.phone,
-        vendorType: this.vendorType,
-        isPublic: isPublicValue,
-        createdBy: user?.id
-      });
+      const attached =
+        await this.vendorService.getProjectsByVendor(this.vendorId);
+
+     this.selectedProjects =
+      attached
+        .map(p => p.id)
+        .filter((id): id is number => id !== undefined);
+        }
+  }
+}
+
+
+async save() {
+
+  const user = this.auth.user();
+  if (!user) return;
+
+  if (user.role === 'VENDOR' &&
+      user.vendorId !== this.vendorId) {
+    return;
+  }
+
+  // =============================
+  // EDIT EXISTING VENDOR
+  // =============================
+  if (this.vendorId) {
+
+    const vendorId = this.vendorId;
+
+    await this.vendorService.update({
+      id: vendorId,
+      name: this.name,
+      phone: this.phone,
+      vendorType: this.vendorType,
+      isPublic: this.isManager ? (this.isPublic ? 1 : 0) : 0
+    });
+
+    if (this.isManager) {
+
+      const existing =
+        await this.vendorService.getProjectsByVendor(vendorId);
+
+      const existingIds =
+        existing
+          .map(p => p.id)
+          .filter((id): id is number => id !== undefined);
+
+      for (const pid of this.selectedProjects) {
+        if (!existingIds.includes(pid)) {
+          await this.vendorService.attachToProject(pid, vendorId);
+        }
+      }
+
+      for (const pid of existingIds) {
+        if (!this.selectedProjects.includes(pid)) {
+          await this.vendorService.detachFromProject(pid, vendorId);
+        }
+      }
     }
 
-    this.router.navigateByUrl('/vendors');
+  }
+
+  // =============================
+  // CREATE NEW VENDOR
+  // =============================
+  else {
+
+    const result = await this.vendorService.create({
+      name: this.name,
+      phone: this.phone,
+      vendorType: this.vendorType,
+      isPublic: this.isManager ? (this.isPublic ? 1 : 0) : 0,
+      createdBy: user.id
+    });
+
+    const vendorId = result.changes.lastId as number;
+
+    for (const pid of this.selectedProjects) {
+      await this.vendorService.attachToProject(pid, vendorId);
+    }
+  }
+
+  this.router.navigate(['/vendor/dashboard']);
+}
+
+
+  toggleProject(projectId: number, event: any) {
+
+    if (event.target.checked) {
+      this.selectedProjects.push(projectId);
+    } else {
+      this.selectedProjects =
+        this.selectedProjects.filter(id => id !== projectId);
+    }
   }
 }

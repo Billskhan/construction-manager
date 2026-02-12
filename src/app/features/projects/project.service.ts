@@ -79,4 +79,18 @@ const projectId = result.changes.lastId;
   console.log('✅ Project + stages created + ProjectID ' + projectId);
   return projectId; // ← important
 }
+
+
+async getByManager(managerId: number) {
+
+  const res = await this.sqlite.query(`
+    SELECT *
+    FROM projects
+    WHERE createdBy = ?
+    ORDER BY createdAt DESC
+  `, [managerId]);
+
+  return res.values ?? [];
+}
+
 }

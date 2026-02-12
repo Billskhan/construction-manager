@@ -89,7 +89,8 @@ async query(sql: string, params: any[] = []) {
   return this.database.query(sql, params);
 }
 
-async run(sql: string, params: any[] = []) {
+async run(sql: string, params: any[] = []):
+  Promise<{ changes: { lastId: number } }> {
   return this.database.run(sql, params);
 }
 
@@ -146,6 +147,7 @@ async run(sql: string, params: any[] = []) {
         
         createdAt TEXT
       );`,
+
       `CREATE TABLE IF NOT EXISTS project_vendors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         projectId INTEGER,
@@ -153,7 +155,8 @@ async run(sql: string, params: any[] = []) {
         isActive INTEGER DEFAULT 1,
         UNIQUE(projectId, vendorId)
         );`,
-      `CREATE TABLE IF NOT EXISTS transactions (
+      
+        `CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         projectId INTEGER,
         stageId INTEGER,

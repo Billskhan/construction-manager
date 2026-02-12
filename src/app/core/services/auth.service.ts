@@ -5,14 +5,24 @@ import { User } from '../../shared/models/user.model';
 export class AuthService {
 
   private _user = signal<User | null>(null);
-
   user = this._user.asReadonly();
 
   isLoggedIn = computed(() => !!this._user());
+  isManager  = computed(() => this._user()?.role === 'MANAGER');
+  isVendor   = computed(() => this._user()?.role === 'VENDOR');
 
-  isManager = computed(() => this._user()?.role === 'MANAGER');
+constructor() {
+  const saved = localStorage.getItem('session_user');
 
-  isVendor = computed(() => this._user()?.role === 'VENDOR');
+  if (saved) {
+    const user = JSON.parse(saved);
+    this._user.set(user);
+    console.log('Session restored:', user);
+  } else {
+    console.log('No session found');
+  }
+}
+
 
   login(user: User) {
     this._user.set(user);
@@ -24,11 +34,10 @@ export class AuthService {
     localStorage.removeItem('session_user');
   }
 
-  restoreSession() {
-    const saved = localStorage.getItem('session_user');
-    if (saved) {
-      this._user.set(JSON.parse(saved));
-    }
-  }
+  // private restoreSession() {
+  //   const saved = localStorage.getItem('session_user');
+  //   if (saved) {
+  //     this._user.set(JSON.parse(saved));
+  //   }
+  // }
 }
-

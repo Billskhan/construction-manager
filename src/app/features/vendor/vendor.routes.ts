@@ -1,34 +1,39 @@
-import { Routes } from '@angular/router';
-import { VendorListComponent } from './vendor-list.component';
-import { VendorFormComponent } from './vendor-form.component';
-import { VendorDashboardComponent } from './vendor-dashboard.component';
-import { managerGuard } from '../../core/guards/manager.guard';
-import { vendorGuard } from '../../core/guards/vendor.guard';
+import { Routes } from "@angular/router";
+import { managerGuard } from "../../core/guards/manager.guard";
+import { vendorGuard } from "../../core/guards/vendor.guard";
+import { VendorDashboardComponent } from "./vendor-dashboard.component";
+import { VendorFormComponent } from "./vendor-form.component";
+import { VendorListComponent } from "./vendor-list.component";
 
 export const VENDOR_ROUTES: Routes = [
 
-  // 🔹 Manager Side (Project-based)
+  // =============================
+  // 🔹 VENDOR PORTAL
+  // =============================
   {
-    path: '',
+    path: 'dashboard',
+    component: VendorDashboardComponent,
+    canActivate: [vendorGuard]
+  },
+
+  // =============================
+  // 🔹 MANAGER GLOBAL VENDORS
+  // =============================
+  {
+    path: 'manage',
     component: VendorListComponent,
     canActivate: [managerGuard]
   },
   {
-    path: 'add',
+    path: 'manage/add',
     component: VendorFormComponent,
     canActivate: [managerGuard]
   },
   {
-    path: 'edit/:vendorId',
+    path: 'manage/edit/:vendorId',
     component: VendorFormComponent,
     canActivate: [managerGuard]
   },
-
-  // 🔹 Vendor Portal Side
-  {
-    path: 'dashboard',
-    component: VendorDashboardComponent,
-    //canActivate: [vendorGuard]
-  }
 
 ];
+

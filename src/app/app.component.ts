@@ -42,7 +42,7 @@ export class AppComponent {
     public auth: AuthService
   ) {
     // Now safe — SQLite is already ready
-    this.auth.restoreSession();
+    //this.auth.restoreSession();
 
     const user = this.auth.user();
     if (user) {

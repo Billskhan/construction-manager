@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SQLiteService } from '../../core/services/sqlite.service';
 import { Vendor } from '../../shared/models/vendor.model';
+import { Project } from '../../shared/models/project.model';
 
 @Injectable({ providedIn: 'root' })
 export class VendorService {
@@ -36,28 +37,29 @@ export class VendorService {
     return res.values?.[0] ?? null;
   }
 
-  async create(vendor: {
-    name: string;
-    phone: string;
-    vendorType: string;
-    isPublic?: number;
-    createdBy?: number;
-  }) {
+async create(vendor: {
+  name: string;
+  phone: string;
+  vendorType: string;
+  isPublic?: number;
+  createdBy?: number;
+}): Promise<{ changes: { lastId: number } }> {
 
-    return await this.sqlite.run(
-      `INSERT INTO vendors
-       (name, phone, vendorType, isPublic, createdBy, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        vendor.name,
-        vendor.phone,
-        vendor.vendorType,
-        vendor.isPublic ?? 0,
-        vendor.createdBy ?? null,
-        new Date().toISOString()
-      ]
-    );
-  }
+  return await this.sqlite.run(
+    `INSERT INTO vendors
+     (name, phone, vendorType, isPublic, createdBy, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      vendor.name,
+      vendor.phone,
+      vendor.vendorType,
+      vendor.isPublic ?? 0,
+      vendor.createdBy ?? null,
+      new Date().toISOString()
+    ]
+  );
+}
+
 
   async update(vendor: {
     id: number;
@@ -92,33 +94,81 @@ export class VendorService {
      PROJECT ASSIGNMENT
   ========================== */
 
-  async getByProject(projectId: number): Promise<Vendor[]> {
-    const res = await this.sqlite.query(`
-      SELECT v.*
-      FROM vendors v
-      JOIN project_vendors pv
-        ON pv.vendorId = v.id
-      WHERE pv.projectId = ?
-      ORDER BY v.name
-    `, [projectId]);
+async getByProject(projectId: number): Promise<Vendor[]> {
+  const res = await this.sqlite.query(`
+    SELECT v.*
+    FROM vendors v
+    JOIN project_vendors pv
+      ON pv.vendorId = v.id
+    WHERE pv.projectId = ?
+      AND pv.isActive = 1
+    ORDER BY v.name
+  `, [projectId]);
 
-    return (res.values ?? []) as Vendor[];
-  }
+  return (res.values ?? []) as Vendor[];
+}
 
-  async attachToProject(projectId: number, vendorId: number) {
-    await this.sqlite.run(
-      `INSERT OR IGNORE INTO project_vendors
-       (projectId, vendorId)
-       VALUES (?, ?)`,
-      [projectId, vendorId]
-    );
-  }
 
-  async detachFromProject(projectId: number, vendorId: number) {
-    await this.sqlite.run(
-      `DELETE FROM project_vendors
-       WHERE projectId = ? AND vendorId = ?`,
-      [projectId, vendorId]
-    );
-  }
+async attachToProject(projectId: number, vendorId: number) {
+  await this.sqlite.run(`
+    INSERT INTO project_vendors
+    (projectId, vendorId, isActive)
+    VALUES (?, ?, 1)
+    ON CONFLICT(projectId, vendorId)
+    DO UPDATE SET isActive = 1
+  `, [projectId, vendorId]);
+}
+
+
+async detachFromProject(projectId: number, vendorId: number) {
+  await this.sqlite.run(`
+    UPDATE project_vendors
+    SET isActive = 0
+    WHERE projectId = ? AND vendorId = ?
+  `, [projectId, vendorId]);
+}
+async getByManager(managerId: number): Promise<Vendor[]> {
+
+  const res = await this.sqlite.query(`
+    SELECT DISTINCT v.*
+    FROM vendors v
+    JOIN project_vendors pv ON pv.vendorId = v.id
+    JOIN projects p ON p.id = pv.projectId
+    WHERE p.createdBy = ?
+      AND pv.isActive = 1
+    ORDER BY v.name
+  `, [managerId]);
+
+  return (res.values ?? []) as Vendor[];
+}
+async getGlobalForManager(managerId: number): Promise<Vendor[]> {
+
+  const res = await this.sqlite.query(`
+    SELECT *
+    FROM vendors
+    WHERE id NOT IN (
+      SELECT pv.vendorId
+      FROM project_vendors pv
+      JOIN projects p ON p.id = pv.projectId
+      WHERE p.createdBy = ?
+        AND pv.isActive = 1
+    )
+    ORDER BY name
+  `, [managerId]);
+
+  return (res.values ?? []) as Vendor[];
+}
+    async getProjectsByVendor(vendorId: number): Promise<Project[]> {
+
+      const res = await this.sqlite.query(`
+        SELECT p.*
+        FROM projects p
+        JOIN project_vendors pv
+          ON pv.projectId = p.id
+        WHERE pv.vendorId = ?
+          AND pv.isActive = 1
+      `, [vendorId]);
+
+      return (res.values ?? []) as Project[];
+    }
 }
