@@ -9,7 +9,21 @@ import { ProjectStore } from "../projects/project.store";
   template: `
     <h2>Manager Dashboard</h2>
 
+
+
+
+
+
+
     <h3>Projects</h3>
+
+        <div class="actions">
+          <button (click)="goToProjects()">📁 View Projects</button>
+
+          <button (click)="addProject()">➕ New Project</button>
+
+          <button (click)="goToVendors()">🏪 Vendor Dashboard</button>
+        </div>
 
     <div *ngIf="store.loading()">Loading projects...</div>
 
@@ -30,6 +44,11 @@ import { ProjectStore } from "../projects/project.store";
 })
 export class ManagerDashboardComponent implements OnInit {
 
+goToVendors() {
+  this.router.navigateByUrl('/vendor/dashboard');
+}
+
+
   constructor(
     public store: ProjectStore,
     private router: Router
@@ -38,7 +57,14 @@ export class ManagerDashboardComponent implements OnInit {
   ngOnInit() {
     this.store.loadProjects();   // ⭐ very important
   }
+  goToProjects() {
+    this.router.navigateByUrl('/projects');
+  }
 
+  // ✅ This is the important part
+  addProject() {
+    this.router.navigateByUrl('/projects/add');
+  }
   open(id?: number) {
       if (!id) return;
   this.router.navigate(['/projects', id]);

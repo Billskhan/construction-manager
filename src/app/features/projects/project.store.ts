@@ -24,8 +24,8 @@ async addProject(project: Project) {
   this.projectId.set(id);      // ← THE MISSING LINE
   await this.loadProjects();
 }
-  setActiveProject(id: number) {
-    this.projectId.set(id);
-  }
+  // setActiveProject(id: number) {
+  //   this.projectId.set(id);
+  // }
 }
 

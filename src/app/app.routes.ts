@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { SqliteReadyGuard } from './core/guards/sqlite-ready.guard';
 import { RoleRedirectComponent } from './features/auth/role-redirect.component';
+import { managerGuard } from './core/guards/manager.guard';
 
 export const routes: Routes = [
 
@@ -36,6 +37,7 @@ export const routes: Routes = [
       // 🏗️ Projects
       {
         path: 'projects',
+        canActivate: [managerGuard], 
         loadChildren: () =>
           import('./features/projects/projects.routes')
             .then(m => m.PROJECT_ROUTES),

@@ -1,11 +1,11 @@
 export type VendorType = 'Material' | 'Contractor' | 'Service';
 
 export interface Vendor {
-  id?: number;
-  projectId: number;
+  id: number;
   name: string;
   phone: string;
   vendorType: VendorType;
-  hasApp?: boolean;
+  createdBy?: number;
   createdAt?: string;
+  isPublic?: 0 | 1;
 }

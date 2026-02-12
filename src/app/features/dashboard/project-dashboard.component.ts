@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProjectDashboardStore } from './project-dashboard.store';
@@ -6,6 +6,8 @@ import { TransactionStore } from '../transactions/transaction.store';
 import { StageStore } from '../stages/stage.store';
 import { AuthService } from '../../core/services/auth.service';
 import { ProjectService } from '../projects/project.service';
+import { ProjectStore } from '../projects/project.store';
+import { Project } from '../../shared/models/project.model';
 
 @Component({
   standalone: true,
@@ -14,10 +16,23 @@ import { ProjectService } from '../projects/project.service';
   template: `
     <h2>{{ projectName() ? projectName() + ' Dashboard' : 'Project Dashboard' }}</h2>
 
+      <h3>Project Details</h3>
+
+      <div class="project-details" *ngIf="project() as p">
+        <div><strong>Location:</strong> {{ p.location || '—' }}</div>
+        <div><strong>StartDate:</strong> {{ p.startDate || '—' }}</div>
+        <div><strong>Project Manager:</strong> {{ p.projectManager || '—' }}</div>
+
+        <div><strong>Plot Size:</strong> {{ p.plotSize || '—' }}</div>
+        <div><strong>Description:</strong> {{ p.description || '—' }}</div>
+      </div>
+
     <!-- KPI CARDS -->
+     <h3>KPI Cards</h3>
     <div class="kpis">
       <div>Total Spent: {{ dashboard.totalSpent() }}</div>
       <div>Outstanding Credit: {{ dashboard.totalCredit() }}</div>
+      
     </div>
 
     <!-- STAGE SUMMARY -->
@@ -30,7 +45,7 @@ import { ProjectService } from '../projects/project.service';
         <th>Variance</th>
       </tr>
 
-      @for (s of dashboard.stageCostSummary(); track s.stage) {
+      @for (s of dashboard.stageCostSummary(); track s.stageId) {
         <tr>
           <td>{{ s.stage }}</td>
           <td>{{ s.budget }}</td>
@@ -41,6 +56,10 @@ import { ProjectService } from '../projects/project.service';
         </tr>
       }
     </table>
+
+
+
+
 
     <!-- RECENT TRANSACTIONS -->
     <h3>Recent Transactions</h3>
@@ -64,7 +83,9 @@ import { ProjectService } from '../projects/project.service';
 export class ProjectDashboardComponent implements OnInit {
   projectId!: number;
   isManager = false;
-  projectName = signal('');
+  //projectName = signal('');
+  project = signal<Project | null>(null);
+  projectName = computed(() => this.project()?.name ?? '');
 
   constructor(
     public dashboard: ProjectDashboardStore,
@@ -73,18 +94,35 @@ export class ProjectDashboardComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     public auth: AuthService,
-    private projectService: ProjectService
+    public projectstore: ProjectStore,
+    private projectService: ProjectService,
   ) {}
 
-  async ngOnInit() {
-    this.projectId = Number(this.route.snapshot.paramMap.get('id'));
-    this.isManager = this.auth.isManager();
-    this.stageStore.load(this.projectId);
-    this.txStore.load(this.projectId);
+async ngOnInit() {
 
-    const project = await this.projectService.getById(this.projectId);
-    this.projectName.set(project?.name ?? '');
+  const id = this.route.snapshot.paramMap.get('id');
+
+  if (!id) {
+    console.error('Project ID missing from route');
+    return;
   }
+
+  this.projectId = Number(id);
+
+  if (isNaN(this.projectId)) {
+    console.error('Invalid Project ID');
+    return;
+  }
+
+  this.isManager = this.auth.isManager();
+
+  await this.stageStore.load(this.projectId);
+  await this.txStore.load(this.projectId);
+
+  const p = await this.projectService.getById(this.projectId);
+  this.project.set(p);
+}
+
 
   addTx() {
     this.router.navigateByUrl(`/projects/${this.projectId}/transactions/add`);

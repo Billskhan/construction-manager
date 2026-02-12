@@ -10,7 +10,14 @@ export class VendorStore {
 
   constructor(private service: VendorService) {}
 
-  async load(projectId: number) {
+  async loadAll() {
+    this.loading.set(true);
+    const data = await this.service.getAll();
+    this.vendors.set(data);
+    this.loading.set(false);
+  }
+
+  async loadByProject(projectId: number) {
     this.loading.set(true);
     const data = await this.service.getByProject(projectId);
     this.vendors.set(data);
@@ -19,6 +26,11 @@ export class VendorStore {
 
   async add(vendor: Vendor) {
     await this.service.create(vendor);
-    await this.load(vendor.projectId);
+    await this.loadAll();  // ✅ reload global list
+  }
+
+  async delete(id: number) {
+    await this.service.delete(id);
+    await this.loadAll();
   }
 }

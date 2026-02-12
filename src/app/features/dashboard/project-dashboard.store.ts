@@ -24,24 +24,49 @@ export class ProjectDashboardStore {
     )
   );
 
+  // stageCostSummary = computed(() => {
+  //   return this.stageStore.stages().map(stage => {
+  //     const stageTx = this.txStore.transactions()
+  //       .filter(t => t.stageId === stage.id);
+
+  //     const actual = stageTx.reduce(
+  //       (s, t) => s + t.totalAmount,
+  //       0
+  //     );
+
+  //     return {
+  //        stageId: stage.id,
+  //       stage: stage.name,
+  //       budget: stage.budget ?? 0,
+  //       actual,
+  //       variance: (stage.budget ?? 0) - actual,
+  //     };
+  //   });
+  // });
+
   stageCostSummary = computed(() => {
-    return this.stageStore.stages().map(stage => {
-      const stageTx = this.txStore.transactions()
-        .filter(t => t.stageId === stage.id);
 
-      const actual = stageTx.reduce(
-        (s, t) => s + t.totalAmount,
-        0
-      );
+  const transactions = this.txStore.transactions();
+  const stages = this.stageStore.stages();
 
-      return {
-        stage: stage.name,
-        budget: stage.budget ?? 0,
-        actual,
-        variance: (stage.budget ?? 0) - actual,
-      };
-    });
+  return stages.map(stage => {
+
+    const stageId = stage.id ?? 0;
+    const budget = stage.budget ?? 0;
+
+    const actual = transactions
+      .filter(t => t.stageId === stageId)
+      .reduce((sum, t) => sum + t.totalAmount, 0);
+
+    return {
+      stageId,
+      stage: stage.name,
+      budget,
+      actual,
+      variance: budget - actual,
+    };
   });
+});
 
   recentTransactions = computed(() =>
     [...this.txStore.transactions()]

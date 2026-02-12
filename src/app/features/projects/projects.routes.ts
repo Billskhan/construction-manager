@@ -4,8 +4,11 @@ import { ProjectFormComponent } from './project-form.component';
 import { managerGuard } from '../../core/guards/manager.guard' ; 
 import { ProjectDashboardComponent } from '../dashboard/project-dashboard.component';
 
+
+
 export const PROJECT_ROUTES: Routes = [
-  { path: '', component: ProjectListComponent },
+  { path: '',
+     component: ProjectListComponent },
   {
     path: 'add',
     component: ProjectFormComponent,

@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { TransactionItem } from '../../shared/models/transaction-item.model';
 import { VendorService } from '../vendor/vendor.service';
 import { StageStore } from '../stages/stage.store';
+import { ProjectStore } from '../projects/project.store';
 
 @Component({
   standalone: true,
@@ -115,11 +116,12 @@ vendors: any[] = [];
     private vendorService: VendorService,
     private auth: AuthService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    //private projectStore: ProjectStore
   ) {
-    const routeProjectId = this.route.snapshot.paramMap.get('id')
-      ?? this.route.parent?.snapshot.paramMap.get('id');
-    this.projectId = Number(routeProjectId);
+    //const routeProjectId = this.route.snapshot.paramMap.get('id')
+      //?? this.route.parent?.snapshot.paramMap.get('id');
+    //this.projectId = Number(routeProjectId);
   }
 
   addItem() {
@@ -133,11 +135,22 @@ vendors: any[] = [];
       amount: 0,
     });
   }
+// async ngOnInit() {
+//   const pid = this.projectStore.projectId()!;
+//   this.vendors = await this.vendorService.getAll();
+//    await this.stageStore.load(this.projectId);
+//    console.log('TX FORM projectId (STORE):', pid);
+//   //this.vendors = await this.vendorService.getByProject(projectId);
+// }
 async ngOnInit() {
+  this.projectId = Number(
+    this.route.parent?.snapshot.paramMap.get('id')
+  );
+
+  console.log('TX FORM projectId (ROUTE):', this.projectId);
+
   this.vendors = await this.vendorService.getAll();
-   await this.stageStore.load(this.projectId);
-   console.log('TX FORM projectId:', this.projectId);
-  //this.vendors = await this.vendorService.getByProject(projectId);
+  await this.stageStore.load(this.projectId);
 }
   recalculateItem(item: TransactionItem) {
     item.amount = (item.quantity || 0) * (item.rate || 0);
@@ -175,25 +188,46 @@ async ngOnInit() {
     this.totalAmount > 0
   );
 }
+async save() {
+  await this.store.add(
+    {
+      projectId: this.projectId,   // 👈 from route
+      stageId: this.stageId!,
+      vendorId: this.vendorId!,
+      date: this.date,
+      entryType: 'Material',
+      paymentMode: 'Cash',
+      totalAmount: this.totalAmount,
+      creditAmount: this.creditAmount,
+      createdBy: this.auth.user()?.id,
+    },
+    this.items
+  );
 
-  async save() {
-    await this.store.add(
-      {
-        projectId: this.projectId,
-        stageId: this.stageId!,
-        vendorId: this.vendorId!,
-        date: this.date,
-        entryType: 'Material',
-        paymentMode: 'Cash',
-        totalAmount: this.totalAmount,
-        creditAmount: this.creditAmount,
-        createdBy: this.auth.user()?.id,
-      },
-      this.items
-    );
+  this.router.navigateByUrl(
+    `/projects/${this.projectId}/transactions`
+  );
+}
 
-    this.router.navigateByUrl(
-      `/projects/${this.projectId}/transactions`
-    );
-  }
+//   async save() {
+//   const pid = this.projectStore.projectId()!;
+
+//   await this.store.add(
+//     {
+//       projectId: pid,        // ✅ from store
+//       stageId: this.stageId!,
+//       vendorId: this.vendorId!,
+//       date: this.date,
+//       entryType: 'Material',
+//       paymentMode: 'Cash',
+//       totalAmount: this.totalAmount,
+//       creditAmount: this.creditAmount,
+//       createdBy: this.auth.user()?.id,
+//     },
+//     this.items
+//   );
+
+//   this.router.navigateByUrl(`/projects/${pid}/transactions`);
+// }
+
 }

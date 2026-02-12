@@ -20,6 +20,7 @@ import { Project } from '../../shared/models/project.model';
           (click)="openProject(p)">
         <strong>{{ p.name }}</strong>
         <small>({{ p.status }})</small>
+       
       </li>
     </ul>
   `,
@@ -38,9 +39,12 @@ export class ProjectListComponent implements OnInit {
   add() {
     this.router.navigateByUrl('/projects/add');
   }
+// openProject(project: Project) {
+//   this.projectstore.setActiveProject(project.id!);   // ← POINT #3
+//   this.router.navigate(['/dashboard']);            // or tx-form or stages
+// }
 openProject(project: Project) {
-  this.projectstore.setActiveProject(project.id!);   // ← POINT #3
-  this.router.navigate(['/dashboard']);            // or tx-form or stages
+  this.router.navigate(['/projects', project.id]);
 }
   open(id?: number) {
     this.router.navigateByUrl(`/projects/${id}`);

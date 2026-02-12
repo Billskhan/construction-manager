@@ -30,22 +30,22 @@ if (saved) {
 
     // ✅ Build compatibility layer ONCE
     this._database = {
-      run: (sql: string, params: any[] = []) => {
-        const stmt = this.db.prepare(sql, params);
-        stmt.step();
-        stmt.free();
+    run: (sql: string, params: any[] = []) => {
+      // Use db.run directly (keeps SQLite context)
+      this.db.run(sql, params);
 
-          this.persist(); 
+      // Now safely read last inserted id
+      const res = this.db.exec(
+        'SELECT last_insert_rowid() as id'
+      );
 
-        const idStmt = this.db.prepare(
-          'SELECT last_insert_rowid() as id'
-        );
-        idStmt.step();
-        const lastId = idStmt.getAsObject().id as number;
-        idStmt.free();
+      const lastId = res[0].values[0][0];
 
-        return { changes: { lastId } };
-      },
+      // Persist AFTER reading id
+      this.persist();
+
+      return { changes: { lastId } };
+    },
 
       query: (sql: string, params: any[] = []) => {
         const stmt = this.db.prepare(sql, params);
@@ -110,6 +110,11 @@ async run(sql: string, params: any[] = []) {
         status TEXT,
         startDate TEXT,
         endDate TEXT,
+        description TEXT,
+        projectManager TEXT,
+        plotSize TEXT,
+        cashAmount REAL,
+        financedAmount REAL,
         createdBy INTEGER,
         createdAt TEXT
       );`,
@@ -120,7 +125,8 @@ async run(sql: string, params: any[] = []) {
         name TEXT,
         sequence INTEGER,
         budget REAL,
-        isActive INTEGER
+        isActive INTEGER,
+        UNIQUE(projectId, name)
       );`,
         
       `CREATE TABLE IF NOT EXISTS stage_templates (
@@ -131,13 +137,22 @@ async run(sql: string, params: any[] = []) {
 
       `CREATE TABLE IF NOT EXISTS vendors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        projectId INTEGER,
+        
         name TEXT,
         phone TEXT,
         vendorType TEXT,
-        hasApp INTEGER,
+        isPublic INTEGER DEFAULT 0,   -- 🔥 public directory
+        createdBy INTEGER,            -- manager who created
+        
         createdAt TEXT
       );`,
+      `CREATE TABLE IF NOT EXISTS project_vendors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        projectId INTEGER,
+        vendorId INTEGER,
+        isActive INTEGER DEFAULT 1,
+        UNIQUE(projectId, vendorId)
+        );`,
       `CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         projectId INTEGER,

@@ -36,17 +36,23 @@ async getAll(): Promise<Project[]> {
 
 async create(project: Project) {
   const query = `
-    INSERT INTO projects (name, location, status, startDate, createdBy, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO projects (name, location, status, startDate, description, projectManager, plotSize,
+    cashAmount, financedAmount, createdBy, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
-    project.name,
-    project.location ?? '',
-    project.status,
-    project.startDate ?? null,
-    project.createdBy ?? null,
-    new Date().toISOString(),
+  project.name,
+  project.location ?? '',
+  project.status,
+  project.startDate ?? null,
+  project.description ?? '',
+  project.projectManager ?? '',
+  project.plotSize ?? '',
+  project.cashAmount ?? 0,
+  project.financedAmount ?? 0,
+  project.createdBy ?? null,
+  new Date().toISOString(),
   ];
 
 // 1️⃣ Insert project AND get id correctly

@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { VendorStore } from './vendor.store';
 import { ActivatedRoute, Router } from '@angular/router';
+import { VendorStore } from './vendor.store';
+import { VendorService } from './vendor.service';
+import { AuthService } from '../../core/services/auth.service';
 import { VendorType } from '../../shared/models/vendor.model';
 
 @Component({
@@ -10,9 +12,10 @@ import { VendorType } from '../../shared/models/vendor.model';
   selector: 'app-vendor-form',
   imports: [CommonModule, FormsModule],
   template: `
-    <h2>Add Vendor</h2>
+    <h2>{{ vendorId ? 'Edit Vendor' : 'Add Vendor' }}</h2>
 
     <form (ngSubmit)="save()">
+
       <label>
         Name
         <input [(ngModel)]="name" name="name" required />
@@ -32,40 +35,96 @@ import { VendorType } from '../../shared/models/vendor.model';
         </select>
       </label>
 
-      <label>
-        Has App Installed?
-        <input type="checkbox" [(ngModel)]="hasApp" name="hasApp" />
+      <!-- Manager only -->
+      <label *ngIf="isManager">
+        Public Profile
+        <input type="checkbox"
+               [(ngModel)]="isPublic"
+               name="isPublic" />
       </label>
 
       <button type="submit">Save</button>
+
     </form>
   `,
 })
 export class VendorFormComponent {
 
-  projectId!: number;
+  vendorId?: number;
+
   name = '';
   phone = '';
   vendorType: VendorType = 'Material';
-  hasApp = false;
+  isPublic = false;
+
+  isManager = false;
 
   constructor(
-    private store: VendorStore,
+    private vendorService: VendorService,
+    private auth: AuthService,
     private route: ActivatedRoute,
     private router: Router
-  ) {
-    this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+  ) {}
+
+  async ngOnInit() {
+
+    const user = this.auth.user();
+    this.isManager = user?.role === 'MANAGER';
+
+    // 🔒 If Vendor role → force own vendorId
+    if (user?.role === 'VENDOR') {
+      this.vendorId = user.vendorId;
+    } else {
+      const id = this.route.snapshot.paramMap.get('vendorId');
+      this.vendorId = id ? Number(id) : undefined;
+    }
+
+    if (this.vendorId) {
+      const vendor = await this.vendorService.getById(this.vendorId);
+      if (vendor) {
+        this.name = vendor.name;
+        this.phone = vendor.phone;
+        this.vendorType = vendor.vendorType;
+        this.isPublic = vendor.isPublic === 1;;
+      }
+    }
   }
 
   async save() {
-    await this.store.add({
-      projectId: this.projectId,
-      name: this.name,
-      phone: this.phone,
-      vendorType: this.vendorType,
-      hasApp: this.hasApp,
-    });
 
-    this.router.navigateByUrl(`/projects/${this.projectId}/vendors`);
+    const user = this.auth.user();
+
+    // 🔒 Security enforcement
+    if (
+      user?.role === 'VENDOR' &&
+      user.vendorId !== this.vendorId
+    ) {
+      alert('Unauthorized access');
+      return;
+    }
+    
+    const isPublicValue = this.isManager
+    ? (this.isPublic ? 1 : 0)
+    : 0;
+
+    if (this.vendorId) {
+      await this.vendorService.update({
+        id: this.vendorId,
+        name: this.name,
+        phone: this.phone,
+        vendorType: this.vendorType,
+        isPublic: isPublicValue
+      });
+    } else {
+      await this.vendorService.create({
+        name: this.name,
+        phone: this.phone,
+        vendorType: this.vendorType,
+        isPublic: isPublicValue,
+        createdBy: user?.id
+      });
+    }
+
+    this.router.navigateByUrl('/vendors');
   }
 }
