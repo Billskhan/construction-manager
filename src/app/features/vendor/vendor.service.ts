@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SQLiteService } from '../../core/services/sqlite.service';
-import { Vendor } from '../../shared/models/vendor.model';
+import { CreateVendorDto, Vendor } from '../../shared/models/vendor.model';
 import { Project } from '../../shared/models/project.model';
 
 @Injectable({ providedIn: 'root' })
@@ -37,21 +37,25 @@ export class VendorService {
     return res.values?.[0] ?? null;
   }
 
-async create(vendor: {
-  name: string;
-  phone: string;
-  vendorType: string;
-  isPublic?: number;
-  createdBy?: number;
-}): Promise<{ changes: { lastId: number } }> {
-
+async create(vendor: CreateVendorDto)
+ {
   return await this.sqlite.run(
     `INSERT INTO vendors
-     (name, phone, vendorType, isPublic, createdBy, createdAt)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+     (name, addressLine1, addressLine2, city,
+      contactPerson1, contactNumber1,
+      contactPerson2, contactNumber2,
+      dealsIn, vendorType, isPublic, createdBy, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       vendor.name,
-      vendor.phone,
+      vendor.addressLine1 ?? null,
+      vendor.addressLine2 ?? null,
+      vendor.city ?? null,
+      vendor.contactPerson1 ?? null,
+      vendor.contactNumber1 ?? null,
+      vendor.contactPerson2 ?? null,
+      vendor.contactNumber2 ?? null,
+      vendor.dealsIn ?? null,
       vendor.vendorType,
       vendor.isPublic ?? 0,
       vendor.createdBy ?? null,
@@ -61,27 +65,52 @@ async create(vendor: {
 }
 
 
-  async update(vendor: {
-    id: number;
-    name: string;
-    phone: string;
-    vendorType: string;
-    isPublic?: number;
-  }) {
 
-    await this.sqlite.run(
-      `UPDATE vendors
-       SET name = ?, phone = ?, vendorType = ?, isPublic = ?
-       WHERE id = ?`,
-      [
-        vendor.name,
-        vendor.phone,
-        vendor.vendorType,
-        vendor.isPublic ?? 0,
-        vendor.id
-      ]
-    );
+async update(vendor: Vendor, managerId: number) {
+
+  const res = await this.sqlite.query(`
+    SELECT 1
+    FROM project_vendors pv
+    JOIN projects p ON p.id = pv.projectId
+    WHERE pv.vendorId = ?
+      AND p.createdBy = ?
+      AND pv.isActive = 1
+  `, [vendor.id, managerId]);
+
+  if (!res.values?.length) {
+    throw new Error('Unauthorized vendor modification');
   }
+  await this.sqlite.run(
+    `UPDATE vendors SET
+      name = ?,
+      addressLine1 = ?,
+      addressLine2 = ?,
+      city = ?,
+      contactPerson1 = ?,
+      contactNumber1 = ?,
+      contactPerson2 = ?,
+      contactNumber2 = ?,
+      dealsIn = ?,
+      vendorType = ?,
+      isPublic = ?
+     WHERE id = ?`,
+    [
+      vendor.name,
+      vendor.addressLine1 ?? null,
+      vendor.addressLine2 ?? null,
+      vendor.city ?? null,
+      vendor.contactPerson1 ?? null,
+      vendor.contactNumber1 ?? null,
+      vendor.contactPerson2 ?? null,
+      vendor.contactNumber2 ?? null,
+      vendor.dealsIn ?? null,
+      vendor.vendorType,
+      vendor.isPublic ?? 0,
+      vendor.id
+    ]
+  );
+}
+
 
   async delete(id: number) {
     await this.sqlite.run(
@@ -171,4 +200,23 @@ async getGlobalForManager(managerId: number): Promise<Vendor[]> {
 
       return (res.values ?? []) as Project[];
     }
+
+    async getFinancialSummaryByProject(projectId: number) {
+
+      const res = await this.sqlite.query(`
+        SELECT
+          v.id as vendorId,
+          v.name,
+          SUM(t.totalAmount) as totalPaid,
+          SUM(t.creditAmount) as totalCredit,
+          COUNT(t.id) as txCount
+          FROM vendors v
+          JOIN transactions t
+            ON t.vendorId = v.id
+          WHERE t.projectId = ?
+          GROUP BY v.id
+      `, [projectId]);
+
+        return res.values ?? [];
+      }
 }

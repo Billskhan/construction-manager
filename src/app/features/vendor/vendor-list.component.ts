@@ -22,15 +22,29 @@ import { AuthService } from '../../core/services/auth.service';
           <strong>{{ v.name }}</strong>
           <small>({{ v.vendorType }})</small>
           <br />
-          📞 {{ v.phone }}
+
+          <div *ngIf="v.id && getFinancial(v.id) as f" class="financial-box">
+            💰 Paid: {{ f.totalPaid || 0 }}
+            <br />
+            🧾 Credit: {{ f.totalCredit || 0 }}
+            <br />
+            📊 Transactions: {{ f.txCount || 0 }}
+          </div>
+          
+          <div *ngIf="v.contactNumber1">
+            📞 {{ v.contactNumber1 }}
+          </div>
 
           <div *ngIf="isManager">
-            <button (click)="makePublic(v)">🌍 Make Public</button>
-            <button (click)="remove(v.id)">❌ Remove</button>
+            <button *ngIf="v.id"
+                    (click)="remove(v.id)">
+              ❌ Remove
+            </button>
           </div>
         </li>
       }
     </ul>
+
 
     <hr />
 
@@ -47,13 +61,24 @@ import { AuthService } from '../../core/services/auth.service';
         </li>
       }
     </ul>
-  `
+  `,
+      styles: [`
+    .financial-box {
+      margin-top: 6px;
+      padding: 6px 10px;
+      background: #f4f6f8;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #444;
+    }
+    `]
 })
 export class VendorListComponent implements OnInit {
 
   projectId: number = 0;
   publicVendors: any[] = [];
   isManager = false;
+  vendorFinancials: any[] = [];
 
   constructor(
     public store: VendorStore,
@@ -63,23 +88,25 @@ export class VendorListComponent implements OnInit {
     private auth: AuthService
   ) {}
 
-async ngOnInit() {
+  async ngOnInit() {
 
-  this.projectId = Number(
-    this.route.snapshot.paramMap.get('id')
-  );
+    this.projectId = Number(
+      this.route.snapshot.paramMap.get('id')
+    );
 
-  this.isManager =
-    this.auth.user()?.role === 'MANAGER';
+    this.isManager =
+      this.auth.user()?.role === 'MANAGER';
 
-  await this.store.loadByProject(this.projectId);
+    await this.store.loadByProject(this.projectId);
+    this.vendorFinancials = await this.vendorService.getFinancialSummaryByProject(this.projectId);
+    console.log('Financial Summary:', this.vendorFinancials);
+    
+    if (this.isManager) {
+      this.publicVendors =
+        await this.vendorService.getPublicVendors();
 
-  if (this.isManager) {
-    this.publicVendors =
-      await this.vendorService.getPublicVendors();
+    }
   }
-}
-
 
   add() {
     this.router.navigateByUrl(
@@ -104,12 +131,24 @@ async ngOnInit() {
   }
 
   async makePublic(vendor: any) {
-    await this.vendorService.update({
-      ...vendor,
-      isPublic: 1
-    });
+
+    const user = this.auth.user();
+    if (!user || user.role !== 'MANAGER') return;
+
+    await this.vendorService.update(
+      {
+        ...vendor,
+        isPublic: 1
+      },
+      user.id!   // required because update now needs managerId
+    );
 
     this.publicVendors =
       await this.vendorService.getPublicVendors();
   }
-}
+  getFinancial(vendorId: number) {
+    return this.vendorFinancials.find(
+      v => v.vendorId === vendorId
+        );
+      }
+  }

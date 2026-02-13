@@ -104,6 +104,7 @@ async run(sql: string, params: any[] = []):
         isActive INTEGER,
         createdAt TEXT
       );`,
+
       `CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -134,20 +135,25 @@ async run(sql: string, params: any[] = []):
         id INTEGER PRIMARY KEY,
         name TEXT,
         defaultSequence INTEGER
-      );`,
-
+      );`
+      ,
       `CREATE TABLE IF NOT EXISTS vendors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        
         name TEXT,
-        phone TEXT,
+        addressLine1 TEXT,
+        addressLine2 TEXT,
+        city TEXT,
+        contactPerson1 TEXT,
+        contactNumber1 TEXT,
+        contactPerson2 TEXT,
+        contactNumber2 TEXT,
+        dealsIn TEXT,
         vendorType TEXT,
-        isPublic INTEGER DEFAULT 0,   -- 🔥 public directory
-        createdBy INTEGER,            -- manager who created
-        
+        isPublic INTEGER DEFAULT 0,
+        createdBy INTEGER,
         createdAt TEXT
-      );`,
-
+      );`
+      ,
       `CREATE TABLE IF NOT EXISTS project_vendors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         projectId INTEGER,
