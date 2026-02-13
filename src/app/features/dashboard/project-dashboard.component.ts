@@ -14,71 +14,165 @@ import { Project } from '../../shared/models/project.model';
   selector: 'app-project-dashboard',
   imports: [CommonModule],
   template: `
-    <h2>{{ projectName() ? projectName() + ' Dashboard' : 'Project Dashboard' }}</h2>
+    <div class="dashboard-wrapper">
 
-      <h3>Project Details</h3>
+  <h2>
+    {{ projectName() ? projectName() + ' Dashboard' : 'Project Dashboard' }}
+  </h2>
 
-      <div class="project-details" *ngIf="project() as p">
-        <div><strong>Location:</strong> {{ p.location || '—' }}</div>
-        <div><strong>StartDate:</strong> {{ p.startDate || '—' }}</div>
-        <div><strong>Project Manager:</strong> {{ p.projectManager || '—' }}</div>
+  <!-- PROJECT DETAILS -->
+  <div class="project-card" *ngIf="project() as p">
+    <div><strong>Location:</strong> {{ p.location || '—' }}</div>
+    <div><strong>Start Date:</strong> {{ p.startDate || '—' }}</div>
+    <div><strong>Manager:</strong> {{ p.projectManager || '—' }}</div>
+    <div><strong>Plot Size:</strong> {{ p.plotSize || '—' }}</div>
+  </div>
 
-        <div><strong>Plot Size:</strong> {{ p.plotSize || '—' }}</div>
-        <div><strong>Description:</strong> {{ p.description || '—' }}</div>
-      </div>
-
-    <!-- KPI CARDS -->
-     <h3>KPI Cards</h3>
-    <div class="kpis">
-      <div>Total Spent: {{ dashboard.totalSpent() }}</div>
-      <div>Outstanding Credit: {{ dashboard.totalCredit() }}</div>
-      
+  <!-- KPI SECTION -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span>Total Budget</span>
+      <h3>{{ dashboard.totalBudget() }}</h3>
     </div>
 
-    <!-- STAGE SUMMARY -->
-    <h3>Stage-wise Summary</h3>
-    <table>
+    <div class="kpi-card">
+      <span>Total Spent</span>
+      <h3>{{ dashboard.totalSpent() }}</h3>
+    </div>
+
+    <div class="kpi-card">
+      <span>Outstanding Credit</span>
+      <h3>{{ dashboard.totalCredit() }}</h3>
+    </div>
+
+    <div class="kpi-card">
+      <span>Budget Utilization</span>
+      <h3>{{ dashboard.budgetUtilization() }}%</h3>
+    </div>
+  </div>
+
+  <!-- STAGE SUMMARY -->
+  <h3>Stage Summary</h3>
+  <table class="stage-table">
+    <tr>
+      <th>Stage</th>
+      <th>Budget</th>
+      <th>Actual</th>
+      <th>Variance</th>
+    </tr>
+
+    @for (s of dashboard.stageCostSummary(); track s.stageId) {
       <tr>
-        <th>Stage</th>
-        <th>Budget</th>
-        <th>Actual</th>
-        <th>Variance</th>
+        <td>{{ s.stage }}</td>
+        <td>{{ s.budget }}</td>
+        <td>{{ s.actual }}</td>
+        <td [class.negative]="s.variance < 0">
+          {{ s.variance }}
+        </td>
       </tr>
-
-      @for (s of dashboard.stageCostSummary(); track s.stageId) {
-        <tr>
-          <td>{{ s.stage }}</td>
-          <td>{{ s.budget }}</td>
-          <td>{{ s.actual }}</td>
-          <td [style.color]="s.variance < 0 ? 'red' : 'green'">
-            {{ s.variance }}
-          </td>
-        </tr>
-      }
-    </table>
-
-
-
-
-
-    <!-- RECENT TRANSACTIONS -->
-    <h3>Recent Transactions</h3>
-    <ul>
-      @for (t of dashboard.recentTransactions(); track t.id) {
-        <li>
-          {{ t.date }} — {{ t.totalAmount }}
-        </li>
-      }
-    </ul>
-
-    <!-- QUICK ACTIONS (PART E) -->
-    @if (auth.isManager()) {
-      <div>
-        <button (click)="addTx()">+ Add Transaction</button>
-        <button (click)="viewReports()">📊 Reports</button>
-      </div>
     }
-  `,
+  </table>
+
+  <!-- TOP VENDORS -->
+  <h3>Top Vendors (By Spend)</h3>
+  <ul class="vendor-summary">
+    @for (v of dashboard.topVendors(); track v.vendorId) {
+      <li>
+        Vendor ID: {{ v.vendorId }}
+        <span>PKR {{ v.total }}</span>
+      </li>
+    }
+  </ul>
+
+  <!-- RECENT TX -->
+  <h3>Recent Transactions</h3>
+  <ul>
+    @for (t of dashboard.recentTransactions(); track t.id) {
+      <li>{{ t.date }} — {{ t.totalAmount }}</li>
+    }
+  </ul>
+
+  <!-- ACTIONS -->
+  @if (auth.isManager()) {
+    <div class="actions">
+      <button (click)="addTx()">+ Add Transaction</button>
+      <button (click)="viewReports()">📊 Reports</button>
+    </div>
+  }
+
+</div>
+  `,styles: [`
+.dashboard-wrapper {
+  max-width: 1100px;
+  margin: 30px auto;
+}
+
+.project-card {
+  padding: 15px;
+  background: #f7f9fc;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.kpi-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.kpi-card span {
+  font-size: 13px;
+  color: #666;
+}
+
+.kpi-card h3 {
+  margin-top: 10px;
+}
+
+.stage-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 25px;
+}
+
+.stage-table th, .stage-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.stage-table th {
+  background: #f1f1f1;
+}
+
+.negative {
+  color: #c62828;
+}
+
+.vendor-summary {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 25px;
+}
+
+.vendor-summary li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.actions {
+  margin-top: 20px;
+}
+`]
+
 })
 export class ProjectDashboardComponent implements OnInit {
   projectId!: number;
@@ -87,6 +181,18 @@ export class ProjectDashboardComponent implements OnInit {
   project = signal<Project | null>(null);
   projectName = computed(() => this.project()?.name ?? '');
 
+
+
+
+
+
+
+
+
+
+
+
+  
   constructor(
     public dashboard: ProjectDashboardStore,
     private txStore: TransactionStore,

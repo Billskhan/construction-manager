@@ -44,6 +44,55 @@ export class ProjectDashboardStore {
   //   });
   // });
 
+
+totalBudget = computed(() =>
+  this.stageStore.stages().reduce(
+    (sum, s) => sum + (s.budget ?? 0),
+    0
+  )
+);
+
+budgetUtilization = computed(() => {
+  const budget = this.totalBudget();
+  const spent = this.totalSpent();
+  if (!budget) return 0;
+  return Math.round((spent / budget) * 100);
+});
+
+topVendors = computed(() => {
+
+  const tx = this.txStore.transactions();
+
+  const map = new Map<number, number>();
+
+  for (const t of tx) {
+    map.set(
+      t.vendorId,
+      (map.get(t.vendorId) ?? 0) + t.totalAmount
+    );
+  }
+
+  return Array.from(map.entries())
+    .map(([vendorId, total]) => ({
+      vendorId,
+      total
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
   stageCostSummary = computed(() => {
 
   const transactions = this.txStore.transactions();
